@@ -18,7 +18,7 @@ class EmbeddedKafka(config: EmbeddedKafkaConfig) extends StrictLogging {
   private val logFlushInterval = 1
 
   private val zookeeperProps = new Properties()
-  zookeeperProps.setProperty("clientPort", config.zooKeeperPort.toString)
+  zookeeperProps.setProperty("clientPort", config.zookeeperPort.toString)
   zookeeperProps.setProperty("dataDir", datadir.toFile.getAbsolutePath)
 
   private val quorumConfiguration = new QuorumPeerConfig
@@ -30,7 +30,7 @@ class EmbeddedKafka(config: EmbeddedKafkaConfig) extends StrictLogging {
   val zookeeperServer = new ZooKeeperServerMain {
     // this is needed to expose the stop method as its protected in the super class
     def stop(): Try[Unit] = Try {
-      logger.info(s"Stopping embedded zookeeper [localhost:${config.zooKeeperPort}]")
+      logger.info(s"Stopping embedded zookeeper [${config.zookeeperBroker}]")
       super.shutdown()
       logger.info(s"Zookeeper stopped")
     }
@@ -41,7 +41,7 @@ class EmbeddedKafka(config: EmbeddedKafkaConfig) extends StrictLogging {
   kafkaProps.setProperty("default.replication.factor", config.defaultReplicationFactor.toString)
   kafkaProps.setProperty("port", config.kafkaPort.toString)
   kafkaProps.setProperty("broker.id", config.brokerId.toString)
-  kafkaProps.setProperty("zookeeper.connect", s"localhost:${config.zooKeeperPort}")
+  kafkaProps.setProperty("zookeeper.connect", config.zookeeperBroker)
   kafkaProps.setProperty("auto.create.topics.enable", config.autoCreateTopics.toString)
   kafkaProps.setProperty("log.dir", logDir.toFile.getAbsolutePath)
   kafkaProps.setProperty("log.flush.interval.messages", logFlushInterval.toString)
@@ -54,17 +54,17 @@ class EmbeddedKafka(config: EmbeddedKafkaConfig) extends StrictLogging {
   def start(): Unit = {
     import com.sksamuel.scalax.concurrent.ExecutorImplicits._
     executor.submit {
-      logger.info(s"Starting embedded zookeeper [localhost:${config.zooKeeperPort}]")
+      logger.info(s"Starting embedded zookeeper [${config.zookeeperBroker}]")
       zookeeperServer.runFromConfig(zookeeperConfig)
     }
     // give zookeeper chance to startup
     Thread.sleep(2000)
-    logger.info(s"Starting embedded kakfa server [localhost:${config.kafkaPort}]")
+    logger.info(s"Starting embedded kakfa server [${config.brokerList}]")
     kafkaServer.startup()
   }
 
   def stop(): Unit = {
-    logger.info(s"Stopping embedded kakfa server [localhost:${config.zooKeeperPort}]")
+    logger.info(s"Stopping embedded kakfa server [${config.brokerList}]")
     kafkaServer.shutdown()
     kafkaServer.awaitShutdown()
     zookeeperServer.stop()
