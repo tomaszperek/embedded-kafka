@@ -29,6 +29,8 @@ class EmbeddedKafkaTest extends WordSpec with Matchers with Eventually with Stri
       producer.send(record).get(1, TimeUnit.MINUTES)
       logger.info("Msg sent")
 
+      producer.close(1, TimeUnit.MINUTES)
+
       val consumerProps = new Properties
       consumerProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:" + config.kafkaPort)
       consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, "myconsumer")
@@ -39,6 +41,8 @@ class EmbeddedKafkaTest extends WordSpec with Matchers with Eventually with Stri
       val records = consumer.poll(5000)
       records.iterator.next.value shouldBe "hello world"
 
+      consumer.close()
+      kafka.stop()
     }
   }
 }

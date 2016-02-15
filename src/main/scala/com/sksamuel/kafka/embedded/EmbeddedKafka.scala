@@ -30,7 +30,9 @@ class EmbeddedKafka(config: EmbeddedKafkaConfig) extends StrictLogging {
   val zookeeperServer = new ZooKeeperServerMain {
     // this is needed to expose the stop method as its protected in the super class
     def stop(): Try[Unit] = Try {
+      logger.info(s"Stopping embedded zookeeper [localhost:${config.zooKeeperPort}]")
       super.shutdown()
+      logger.info(s"Zookeeper stopped")
     }
   }
 
@@ -62,9 +64,10 @@ class EmbeddedKafka(config: EmbeddedKafkaConfig) extends StrictLogging {
   }
 
   def stop(): Unit = {
-    zookeeperServer.stop()
+    logger.info(s"Stopping embedded kakfa server [localhost:${config.zooKeeperPort}]")
     kafkaServer.shutdown()
     kafkaServer.awaitShutdown()
+    zookeeperServer.stop()
     executor.shutdown()
     executor.awaitTermination(1, TimeUnit.MINUTES)
   }
